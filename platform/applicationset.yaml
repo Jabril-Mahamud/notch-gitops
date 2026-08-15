@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: notch-services
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: [ "missingkey=error" ]
+  generators:
+  - git:
+      repoURL: https://github.com/<me>/notch-gitops.git
+      revision: HEAD
+      files:
+      - path: "services/*/*/values.yaml"
+  template:
+    metadata:
+      name: '{{index .path.segments 1}}-{{index .path.segments 2}}'
+    spec:
+      project: default
+      sources:
+      - repoURL: https://github.com/<me>/notch.git
+        targetRevision: HEAD
+        path: charts/notch-app
+        helm:
+          ignoreMissingValueFiles: true
+          valueFiles:
+          - $values/envs/{{index .path.segments 2}}/services.common.yaml
+          - $values/services/{{index .path.segments 1}}/service.yaml
+          - $values/services/{{index .path.segments 1}}/{{index .path.segments 2}}/values.yaml
+      - repoURL: https://github.com/<me>/notch-gitops.git
+        targetRevision: HEAD
+        ref: values
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{index .path.segments 1}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
