@@ -3,4 +3,4 @@ service:
     containers:
       app:
         image:
-          ref: nginx:1.27
+          ref: nginx:1.28
