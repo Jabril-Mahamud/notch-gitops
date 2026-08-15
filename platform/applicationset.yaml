@@ -8,7 +8,7 @@ spec:
   goTemplateOptions: [ "missingkey=error" ]
   generators:
   - git:
-      repoURL: https://github.com/<me>/notch-gitops.git
+      repoURL: https://github.com/Jabril-Mahamud/notch-gitops.git
       revision: HEAD
       files:
       - path: "services/*/*/values.yaml"
@@ -18,7 +18,7 @@ spec:
     spec:
       project: default
       sources:
-      - repoURL: https://github.com/<me>/notch.git
+      - repoURL: https://github.com/Jabril-Mahamud/notch.git
         targetRevision: HEAD
         path: charts/notch-app
         helm:
@@ -27,7 +27,7 @@ spec:
           - $values/envs/{{index .path.segments 2}}/services.common.yaml
           - $values/services/{{index .path.segments 1}}/service.yaml
           - $values/services/{{index .path.segments 1}}/{{index .path.segments 2}}/values.yaml
-      - repoURL: https://github.com/<me>/notch-gitops.git
+      - repoURL: https://github.com/Jabril-Mahamud/notch-gitops.git
         targetRevision: HEAD
         ref: values
       destination:
