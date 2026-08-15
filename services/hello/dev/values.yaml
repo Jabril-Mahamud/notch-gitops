@@ -1,0 +1,6 @@
+service:
+  deployment:
+    containers:
+      app:
+        image:
+          ref: nginx:1.27

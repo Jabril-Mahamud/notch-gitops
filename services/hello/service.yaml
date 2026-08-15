@@ -1,0 +1,11 @@
+service:
+  name: hello
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  deployment:
+    containers:
+      app:
+        resources:
+          requests: { cpu: 10m, memory: 32Mi }

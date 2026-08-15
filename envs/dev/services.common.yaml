@@ -1,0 +1,3 @@
+service:
+  env:
+    NOTCH_ENV: dev
