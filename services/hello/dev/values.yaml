@@ -4,6 +4,3 @@ service:
       app:
         image:
           ref: nginx:1.28
-
-global:
-  env: dev

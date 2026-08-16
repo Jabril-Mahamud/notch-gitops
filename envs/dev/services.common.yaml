@@ -1,3 +1,7 @@
+# Applied to every service in the dev environment.
+global:
+  env: dev
+
 service:
   env:
     NOTCH_ENV: dev

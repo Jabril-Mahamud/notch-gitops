@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-apps
+  namespace: argocd
+  annotations:
+    # Last. Everything under platform/apps is a Crossplane CR that needs the
+    # providers healthy and the ProviderConfigs applied (waves 1-4 above).
+    argocd.argoproj.io/sync-wave: "20"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Jabril-Mahamud/notch-gitops.git
+    targetRevision: HEAD
+    path: platform/apps
+    directory:
+      recurse: true
+      # Only manifests. Guards against a Helm values file landing in this tree
+      # and being applied as a Kubernetes object.
+      include: "*.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    # provider-sql Database/Role/Grant are all cluster-scoped; this namespace is
+    # only where namespaced resources would land.
+    namespace: crossplane-system
+  syncPolicy:
+    # prune: false - these front real databases and roles.
+    automated: { prune: false, selfHeal: true }
+    syncOptions:
+      - SkipDryRunOnMissingResource=true

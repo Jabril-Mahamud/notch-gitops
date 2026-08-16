@@ -1,0 +1,16 @@
+# Crossplane names provider pod service accounts after the ProviderRevision
+# (provider-aws-ecr-<hash>), so an IRSA role can never be bound to them by name.
+# This pins the SA name and carries the role-arn annotation itself, which is why
+# notch/cluster.yaml declares the matching role with roleOnly: true.
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: aws-irsa
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  serviceAccountTemplate:
+    metadata:
+      name: provider-aws
+      annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::570056717182:role/notch-crossplane-aws

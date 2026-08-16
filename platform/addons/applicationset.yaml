@@ -3,6 +3,8 @@ kind: ApplicationSet
 metadata:
   name: notch-services
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
 spec:
   goTemplate: true
   goTemplateOptions: [ "missingkey=error" ]
@@ -10,6 +12,9 @@ spec:
   - git:
       repoURL: https://github.com/Jabril-Mahamud/notch-gitops.git
       revision: HEAD
+      # For the files generator, .path is the DIRECTORY holding the match, so
+      # services/notch/dev/values.yaml gives segments [services, notch, dev]:
+      #   index 1 = service name, index 2 = env.
       files:
       - path: "services/*/*/values.yaml"
   template:
@@ -22,7 +27,10 @@ spec:
         targetRevision: HEAD
         path: charts/notch-app
         helm:
-          ignoreMissingValueFiles: true
+          # ignoreMissingValueFiles is deliberately OFF. It previously hid a
+          # misnamed services/notch/services.yaml and rendered a nameless
+          # Deployment instead of failing.
+          ignoreMissingValueFiles: false
           valueFiles:
           - $values/envs/{{index .path.segments 2}}/services.common.yaml
           - $values/services/{{index .path.segments 1}}/service.yaml

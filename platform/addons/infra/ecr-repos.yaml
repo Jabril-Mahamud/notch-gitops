@@ -1,0 +1,33 @@
+apiVersion: ecr.aws.upbound.io/v1beta1
+kind: Repository
+metadata:
+  name: notch-frontend
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  forProvider:
+    region: eu-west-1
+    imageScanningConfiguration:
+      - scanOnPush: true
+    imageTagMutability: MUTABLE
+  # Without this Crossplane looks for a ProviderConfig literally named "default".
+  providerConfigRef:
+    name: notch-aws
+  # Keep the repository and its images if the manifest is ever pruned.
+  deletionPolicy: Orphan
+---
+apiVersion: ecr.aws.upbound.io/v1beta1
+kind: Repository
+metadata:
+  name: notch-backend
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  forProvider:
+    region: eu-west-1
+    imageScanningConfiguration:
+      - scanOnPush: true
+    imageTagMutability: MUTABLE
+  providerConfigRef:
+    name: notch-aws
+  deletionPolicy: Orphan

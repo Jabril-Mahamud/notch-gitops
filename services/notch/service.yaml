@@ -1,0 +1,82 @@
+service:
+  name: notch
+
+  ports:
+    - name: http-frontend
+      port: 80
+      targetPort: http
+    - name: http-backend
+      port: 8080
+      targetPort: http
+
+  ingress:
+    enabled: true
+    className: nginx
+    host: notch.dev.local
+    rules:
+      - path: /api
+        pathType: Prefix
+        portName: http-backend
+      - path: /
+        pathType: Prefix
+        portName: http-frontend
+
+  deployment:
+    podSecurityContext:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+
+    containers:
+      frontend:
+        ports:
+          - name: http
+            containerPort: 3000
+        resources:
+          requests: { cpu: 50m, memory: 128Mi }
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: { drop: ["ALL"] }
+        readinessProbe:
+          httpGet: { path: /, port: http }
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: { path: /, port: http }
+          initialDelaySeconds: 20
+          periodSeconds: 20
+
+      backend:
+        ports:
+          - name: http
+            containerPort: 8000
+        resources:
+          requests: { cpu: 50m, memory: 128Mi }
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: { drop: ["ALL"] }
+        # libpq-style vars. PGUSER/PGPASSWORD come from the Crossplane-written
+        # notch-db secret; the rest are static.
+        env:
+          PGHOST: notch-pg-rw.platform-db.svc.cluster.local
+          PGPORT: "5432"
+          PGDATABASE: notch
+          PGSSLMODE: require
+        envSecrets:
+          PGUSER:
+            name: notch-db
+            key: username
+          PGPASSWORD:
+            name: notch-db
+            key: password
+        # Only app config. The frontend gets the same list by default, so DB
+        # credentials deliberately arrive via envSecrets instead.
+        secrets: [notch-secrets]
+        readinessProbe:
+          httpGet: { path: /health, port: http }
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: { path: /health, port: http }
+          initialDelaySeconds: 20
+          periodSeconds: 20

@@ -1,3 +1,6 @@
+# Bootstrap application. Applied by hand once:
+#   kubectl apply -f platform/root.yaml
+# It is not managed by itself, so edits here need a re-apply.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -9,8 +12,16 @@ spec:
     repoURL: https://github.com/Jabril-Mahamud/notch-gitops.git
     targetRevision: HEAD
     path: platform/addons
+    directory:
+      # Without this, platform/addons/crossplane and platform/addons/infra are
+      # never synced - ArgoCD directory sources are non-recursive by default.
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
   syncPolicy:
-    automated: { prune: false, selfHeal: true }
+    automated: { prune: true, selfHeal: true }
+    syncOptions:
+      # Crossplane and CNPG CRs are rendered before their CRDs exist on the
+      # first sync; skip the dry run rather than fail the whole wave.
+      - SkipDryRunOnMissingResource=true

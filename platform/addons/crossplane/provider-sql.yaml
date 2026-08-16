@@ -1,0 +1,10 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-sql
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  # Connects to CloudNativePG in-cluster; no cloud credentials needed, so no
+  # runtimeConfigRef. Credentials come from the ProviderConfig secret.
+  package: xpkg.crossplane.io/crossplane-contrib/provider-sql:v0.16.1

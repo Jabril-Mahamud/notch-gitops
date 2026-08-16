@@ -1,0 +1,9 @@
+service:
+  deployment:
+    containers:
+      frontend:
+        image:
+          ref: 570056717182.dkr.ecr.eu-west-1.amazonaws.com/notch-frontend:dev-latest
+      backend:
+        image:
+          ref: 570056717182.dkr.ecr.eu-west-1.amazonaws.com/notch-backend:dev-latest

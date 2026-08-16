@@ -1,0 +1,11 @@
+apiVersion: aws.upbound.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: notch-aws
+  annotations:
+    # After the Providers (wave 1) so aws.upbound.io exists.
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  credentials:
+    # Resolves via the SA annotation set in ../crossplane/runtime-config.yaml.
+    source: IRSA

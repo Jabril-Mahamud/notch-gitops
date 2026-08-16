@@ -1,11 +1,24 @@
 service:
   name: hello
+
   ports:
-  - name: http
-    port: 80
-    targetPort: 80
+    - name: http
+      port: 80
+      targetPort: http
+
   deployment:
     containers:
       app:
+        ports:
+          - name: http
+            containerPort: 80
         resources:
           requests: { cpu: 10m, memory: 32Mi }
+        readinessProbe:
+          httpGet: { path: /, port: http }
+          initialDelaySeconds: 3
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: { path: /, port: http }
+          initialDelaySeconds: 10
+          periodSeconds: 20

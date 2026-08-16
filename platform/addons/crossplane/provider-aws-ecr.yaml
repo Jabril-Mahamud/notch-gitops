@@ -1,0 +1,27 @@
+# The family provider owns the aws.upbound.io ProviderConfig CRD and the
+# credential resolution both pods share, so it needs the same IRSA runtime config.
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-family-aws
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  package: xpkg.crossplane.io/crossplane-contrib/provider-family-aws:v1.23.0
+  runtimeConfigRef:
+    name: aws-irsa
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-aws-ecr
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  # v1.x line: v2.x of provider-upjet-aws builds against crossplane-runtime v2
+  # and needs Crossplane 2.x.
+  # xpkg.crossplane.io, not xpkg.upbound.io - Upbound's registry only serves the
+  # old v1.0.x tags for this provider now.
+  package: xpkg.crossplane.io/crossplane-contrib/provider-aws-ecr:v1.23.0
+  runtimeConfigRef:
+    name: aws-irsa
