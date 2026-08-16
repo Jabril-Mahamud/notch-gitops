@@ -1,0 +1,17 @@
+# Group is postgresql.sql.crossplane.io, not sql.crossplane.io - provider-sql
+# ships a separate ProviderConfig per database flavour.
+apiVersion: postgresql.sql.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: notch-shared-pg
+  annotations:
+    # After the CNPG Cluster (wave 3) so the endpoint resolves.
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  credentials:
+    source: PostgreSQLConnectionSecret
+    connectionSecretRef:
+      namespace: platform-db
+      name: notch-pg-superuser
+  # CNPG serves TLS with its own internal CA, so the verify-full default fails.
+  sslMode: require

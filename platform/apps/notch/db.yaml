@@ -1,0 +1,46 @@
+apiVersion: postgresql.sql.crossplane.io/v1alpha1
+kind: Database
+metadata:
+  name: notch
+spec:
+  forProvider:
+    # Required by the CRD. Owning the database is what lets the backend run its
+    # own migrations.
+    ownerRef:
+      name: notch-app
+  providerConfigRef:
+    name: notch-shared-pg
+  deletionPolicy: Orphan
+---
+apiVersion: postgresql.sql.crossplane.io/v1alpha1
+kind: Role
+metadata:
+  name: notch-app
+spec:
+  forProvider:
+    privileges:
+      login: true
+  providerConfigRef:
+    name: notch-shared-pg
+  # Its own secret, NOT notch-secrets. ESO owns notch-secrets with
+  # creationPolicy: Owner and would overwrite anything written here.
+  # The backend container reads these via containers.backend.envSecrets.
+  writeConnectionSecretToRef:
+    name: notch-db
+    namespace: notch
+---
+# Redundant with the ownerRef above (an owner already holds these), but kept
+# explicit so privileges stay visible in git rather than implied by ownership.
+apiVersion: postgresql.sql.crossplane.io/v1alpha1
+kind: Grant
+metadata:
+  name: notch-app-notch
+spec:
+  forProvider:
+    privileges: [ALL]
+    databaseRef:
+      name: notch
+    roleRef:
+      name: notch-app
+  providerConfigRef:
+    name: notch-shared-pg

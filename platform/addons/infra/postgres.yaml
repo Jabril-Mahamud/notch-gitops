@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-db
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+---
+# One secret serving two consumers:
+#   - CloudNativePG reads username/password to set the postgres superuser
+#   - provider-sql reads username/password/endpoint/port as its connection secret
+#
+# Prerequisite: create notch/dev/platform/postgres-superuser in AWS Secrets
+# Manager with a `password` field, e.g.
+#   aws secretsmanager create-secret --name notch/dev/platform/postgres-superuser \
+#     --secret-string '{"password":"'"$(openssl rand -base64 24)"'"}' --region eu-west-1
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: notch-pg-superuser
+  namespace: platform-db
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  secretStoreRef:
+    name: notch-secret-store
+    kind: ClusterSecretStore
+  refreshInterval: "1h"
+  target:
+    name: notch-pg-superuser
+    creationPolicy: Owner
+    template:
+      # CloudNativePG requires this exact type for superuserSecret.
+      type: kubernetes.io/basic-auth
+      data:
+        username: "postgres"
+        password: "{{ .password }}"
+        # provider-sql expects `endpoint`, not CNPG's `host`.
+        endpoint: "notch-pg-rw.platform-db.svc.cluster.local"
+        port: "5432"
+  data:
+    - secretKey: password
+      remoteRef:
+        key: notch/dev/platform/postgres-superuser
+        property: password
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: notch-pg
+  namespace: platform-db
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    # Stateful: never let a pruned manifest take the PVCs with it.
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  instances: 1
+  enableSuperuserAccess: true
+  superuserSecret:
+    name: notch-pg-superuser
+  storage:
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
