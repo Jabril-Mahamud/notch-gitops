@@ -4,6 +4,10 @@ metadata:
   name: notch-frontend
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    # Created by hand so CI had somewhere to push before Crossplane ever ran.
+    # Without this Crossplane treats the repository as new and the create fails
+    # with RepositoryAlreadyExistsException; with it, it adopts the existing one.
+    crossplane.io/external-name: notch-frontend
 spec:
   forProvider:
     region: eu-west-1
@@ -22,6 +26,7 @@ metadata:
   name: notch-backend
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    crossplane.io/external-name: notch-backend
 spec:
   forProvider:
     region: eu-west-1
