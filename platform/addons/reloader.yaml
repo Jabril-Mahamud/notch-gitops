@@ -16,3 +16,5 @@ spec:
     namespace: reloader
   syncPolicy:
     automated: { prune: false, selfHeal: true }
+    syncOptions:
+      - CreateNamespace=true
