@@ -2,12 +2,14 @@ service:
   name: notch
 
   ports:
+    # targetPort is a container port name. Port names are pod-wide, so each
+    # container needs its own.
     - name: http-frontend
       port: 80
-      targetPort: http
+      targetPort: frontend
     - name: http-backend
       port: 8080
-      targetPort: http
+      targetPort: backend
 
   ingress:
     enabled: true
@@ -29,7 +31,7 @@ service:
     containers:
       frontend:
         ports:
-          - name: http
+          - name: frontend
             containerPort: 3000
         resources:
           requests: { cpu: 50m, memory: 128Mi }
@@ -37,17 +39,17 @@ service:
           allowPrivilegeEscalation: false
           capabilities: { drop: ["ALL"] }
         readinessProbe:
-          httpGet: { path: /, port: http }
+          httpGet: { path: /, port: frontend }
           initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
-          httpGet: { path: /, port: http }
+          httpGet: { path: /, port: frontend }
           initialDelaySeconds: 20
           periodSeconds: 20
 
       backend:
         ports:
-          - name: http
+          - name: backend
             containerPort: 8000
         resources:
           requests: { cpu: 50m, memory: 128Mi }
@@ -72,10 +74,10 @@ service:
         # credentials deliberately arrive via envSecrets instead.
         secrets: [notch-secrets]
         readinessProbe:
-          httpGet: { path: /health, port: http }
+          httpGet: { path: /health, port: backend }
           initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
-          httpGet: { path: /health, port: http }
+          httpGet: { path: /health, port: backend }
           initialDelaySeconds: 20
           periodSeconds: 20
