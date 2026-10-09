@@ -1,0 +1,12 @@
+# Local cluster: kind create cluster --name notch --config kind.yaml
+# Apps are served at http://<host>.localhost:8080 (host 80 is taken by caddy).
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    labels:
+      ingress-ready: "true"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 8080
+        protocol: TCP

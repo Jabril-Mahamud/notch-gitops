@@ -97,7 +97,7 @@ aws elbv2 describe-load-balancers --region eu-west-1 \
 **4. Release the EBS volume.**
 
 CNPG sets an ownerReference from the PVC to the Cluster, so deleting the Cluster
-should take the PVC with it, and the default `gp2` StorageClass has
+should take the PVC with it, and the `gp3` StorageClass it uses has
 `reclaimPolicy: Delete`, so the CSI driver then deletes the volume. Verify rather
 than assume — a PVC left behind here is exactly the silent leak.
 

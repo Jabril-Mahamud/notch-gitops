@@ -1,0 +1,34 @@
+# Bootstrap application for the local Kind cluster. Applied by hand once:
+#   kubectl apply -f clusters/kind.yaml
+# It is not managed by itself, so edits here need a re-apply.
+#
+# Two sources: the shared platform, plus what only this cluster needs.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/Jabril-Mahamud/notch-gitops.git
+      targetRevision: HEAD
+      path: platform/addons
+      directory:
+        # Without this, subfolders are never synced - ArgoCD directory sources
+        # are non-recursive by default.
+        recurse: true
+    - repoURL: https://github.com/Jabril-Mahamud/notch-gitops.git
+      targetRevision: HEAD
+      path: clusters/kind
+      directory:
+        recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions:
+      # Crossplane and CNPG CRs are rendered before their CRDs exist on the
+      # first sync; skip the dry run rather than fail the whole wave.
+      - SkipDryRunOnMissingResource=true

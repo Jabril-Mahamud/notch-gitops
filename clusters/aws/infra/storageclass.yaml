@@ -1,0 +1,17 @@
+# gp3: ~20% cheaper than gp2 and faster at baseline.
+# Marked default because EKS >=1.30 ships no default StorageClass (gp2 exists
+# but is no longer annotated), so an unpinned PVC would sit Pending forever.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+# Delete: the volume goes with the PVC, so teardown doesn't leak a billing EBS volume.
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+parameters:
+  type: gp3

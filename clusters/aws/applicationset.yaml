@@ -15,8 +15,9 @@ spec:
       # For the files generator, .path is the DIRECTORY holding the match, so
       # services/notch/dev/values.yaml gives segments [services, notch, dev]:
       #   index 1 = service name, index 2 = env.
+      # Pinned to the dev env: each cluster deploys only its own env.
       files:
-      - path: "services/*/*/values.yaml"
+      - path: "services/*/dev/values.yaml"
   template:
     metadata:
       name: '{{index .path.segments 1}}-{{index .path.segments 2}}'

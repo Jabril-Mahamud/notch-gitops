@@ -1,0 +1,14 @@
+service:
+  ingress:
+    # *.localhost resolves to 127.0.0.1 without /etc/hosts. Port 8080, see kind.yaml.
+    host: notch.localhost
+  deployment:
+    containers:
+      # Built and loaded by scripts/kind-up.sh. Not "latest", which forces
+      # imagePullPolicy Always and fails against an image only kind has.
+      frontend:
+        image:
+          ref: notch-frontend:local
+      backend:
+        image:
+          ref: notch-backend:local

@@ -1,4 +1,6 @@
 service:
+  ingress:
+    host: notch.dev.local
   deployment:
     containers:
       frontend:

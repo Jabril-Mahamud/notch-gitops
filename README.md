@@ -12,22 +12,45 @@ No chart and no application code — three repos, split by lifecycle:
 ## Layout
 
 ```
-platform/root.yaml            bootstrap Application, applied by hand
-platform/addons/              everything root syncs (recursive)
-  crossplane/                 Providers + DeploymentRuntimeConfig
-  infra/                      ProviderConfigs, ECR repos, Postgres
-  applicationset.yaml         generates one Application per services/<name>/<env>
+platform/addons/              shared by every cluster (synced recursively)
+  crossplane/                 provider-sql
+  infra/                      CloudNativePG Cluster, provider-sql ProviderConfig
   apps-root.yaml              syncs platform/apps
 platform/apps/notch/          per-service Crossplane resources (database, role, grant)
+clusters/<cluster>.yaml       root Application for that cluster, applied by hand
+clusters/<cluster>/           what only that cluster needs: ApplicationSet,
+                              ingress-nginx, and for aws ESO, AWS providers,
+                              ECR, gp3 StorageClass
 envs/<env>/services.common.yaml   values for every service in an env
 services/<name>/service.yaml      values for one service, every env
 services/<name>/<env>/values.yaml values for one service, one env
+kind.yaml, scripts/kind-up.sh     local Kind cluster
 ```
 
-The ApplicationSet globs `services/*/*/values.yaml` and layers all three value
-files onto the chart. A service exists once those three files exist.
+Each root syncs two directories: `platform/addons` and `clusters/<cluster>`.
+Each cluster's ApplicationSet is pinned to one env (`kind` -> `local`,
+`aws` -> `dev`) and globs `services/*/<env>/values.yaml`, layering all three value
+files onto the chart. A service exists on a cluster once those three files exist.
+
+Postgres storage uses the cluster's default StorageClass, set per cluster to the
+cheapest option (kind: `standard`, aws: `gp3`). Override with
+`storage.storageClass` in `platform/addons/infra/postgres.yaml`.
 
 ## Bootstrap
+
+### Kind (local, free)
+
+```bash
+scripts/kind-up.sh       # cluster, images from ../notch-fe-app, secrets, ArgoCD, root
+kind delete cluster --name notch
+```
+
+No ESO on Kind: the script creates `notch-pg-superuser` and `notch-secrets`
+directly, and `envs/local` turns the chart's ExternalSecret off. Apps are at
+`http://<host>.localhost:8080` (host port 80 is taken locally). ArgoCD reads
+this repo from GitHub, so changes here need a push before Kind sees them.
+
+### EKS
 
 Order matters. Steps 1 to 3 are manual and must all precede step 5.
 
@@ -38,7 +61,7 @@ and Crossplane later assume, so it has to run first.
 eksctl create cluster -f ../notch/cluster.yaml
 ```
 
-**2. Create the Postgres superuser secret.** `platform/addons/infra/postgres.yaml`
+**2. Create the Postgres superuser secret.** `clusters/aws/infra/pg-superuser.yaml`
 reads this; CloudNativePG will not start without it.
 
 ```bash
@@ -70,12 +93,12 @@ helm install argocd argo/argo-cd -n argocd --create-namespace --version 10.2.1
 **5. Apply root.** Everything else follows from here.
 
 ```bash
-kubectl apply -f platform/root.yaml
+kubectl apply -f clusters/aws.yaml
 ```
 
 ## Sync waves
 
-Root syncs `platform/addons` recursively as one Application, so ordering is by
+Root syncs its two directories as one Application, so ordering is by
 wave rather than by dependency graph:
 
 | Wave | What |
@@ -106,7 +129,7 @@ external-secrets picks it up within `refreshInterval` and reloader restarts the 
 
 ## Images
 
-`platform/addons/infra/ecr-repos.yaml` declares the two ECR repositories, but
+`clusters/aws/infra/ecr-repos.yaml` declares the two ECR repositories, but
 they already exist — they were created by hand from notch-fe-app's
 `.github/aws/bootstrap.sh` so CI had somewhere to push before this cluster had
 ever run. Each carries a `crossplane.io/external-name` annotation; without it
@@ -123,13 +146,11 @@ to `main`. `services/notch/dev/values.yaml` pins `dev-latest`.
 
 Not yet in this repo, and the bootstrap will not get far without them:
 
-- **gp3 StorageClass**, set default, in `platform/addons/infra/`. EKS ships gp2
-  as default; the CNPG `Cluster` in `postgres.yaml` has no `storageClass` set and
-  needs to point at gp3.
 - **ingress-nginx `use-forwarded-headers`**. Without it the backend's per-IP rate
   limit keys on the ingress controller's pod IP, which makes it one shared bucket
-  for every client. The backend already runs uvicorn with `--proxy-headers`, so
-  this is the other half of that fix.
+  for every client. It needs a matching change in notch-fe-app: uvicorn with
+  `--proxy-headers --forwarded-allow-ips=<ingress pod CIDR>` (never `'*'`; the
+  flag was dropped in notch-fe-app `3278f4d`). Ship both halves together.
 
 ## Reaching a service
 

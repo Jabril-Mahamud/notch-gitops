@@ -12,7 +12,6 @@ service:
   ingress:
     enabled: true
     className: nginx
-    host: notch.dev.local
     rules:
       - path: /api
         pathType: Prefix

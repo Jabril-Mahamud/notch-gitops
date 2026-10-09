@@ -1,0 +1,10 @@
+# Applied to every service on the local Kind cluster.
+global:
+  env: local
+
+service:
+  env:
+    NOTCH_ENV: local
+  # No ESO on Kind: <service>-secrets is created by hand (scripts/kind-up.sh).
+  externalSecret:
+    enabled: false

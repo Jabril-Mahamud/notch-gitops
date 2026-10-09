@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ingress-nginx
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes.github.io/ingress-nginx
+    chart: ingress-nginx
+    targetRevision: "4.15.1"
+    helm:
+      values: |
+        controller:
+          # No load balancer on Kind: bind the node's 80/443 directly. kind.yaml
+          # maps host 8080 -> node 80 (host 80 is taken by caddy).
+          hostPort:
+            enabled: true
+          service:
+            type: NodePort
+          nodeSelector:
+            ingress-ready: "true"
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+          ingressClassResource:
+            name: nginx
+            default: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ingress-nginx
+  syncPolicy:
+    automated: { prune: false, selfHeal: true }
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
